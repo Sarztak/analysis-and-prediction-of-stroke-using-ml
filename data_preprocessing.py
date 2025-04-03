@@ -1,7 +1,12 @@
 import polars as pl
 import seaborn as sns
 import matplotlib.pyplot as plt
+from sklearn.model_selection import KFold, cross_val_score, train_test_split
+from sklearn.dummy import DummyClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import fbeta_score, f1_score, precision_recall_curve, precision_score, recall_score, accuracy_score
 sns.set_theme(style="whitegrid")
+
 
 
 schema = {
@@ -112,7 +117,6 @@ sns.histplot(
 )
 
 # if I were to truncate all the cases less than 1 to 1 and those less than 2 and between 1 will it cause damage ? may be not, the data is too large. Do we need prediction for ages which are not integers ? may be, should I keep it as it is. Perhaps I should. It does not harm
-
 # bmi vs stroke
 sns.kdeplot(
     df,
@@ -137,56 +141,108 @@ g.map(sns.kdeplot, 'avg_glucose_level')
 g = sns.FacetGrid(df, col='stroke', hue='stroke')
 g.map(sns.kdeplot, 'age')
 
+# how does stroke vary with gender, hypertension, heart_disease, ever_married, work_type, residence_type, smoking_status
+
+fig = plt.figure(figsize=(15, 20))
+fig.subplots_adjust(wspace=0.5, hspace=0.5)
+for idx, col in enumerate(categorical_cols):
+    fig.add_subplot(nrows, ncols, idx + 1)
+    sns.countplot(data=df.filter(pl.col('stroke') == "1"), x=col,)
+    plt.title(f'Countplot of {col} and stroke')
 
 
+# all these plots are inconclusive because the zeros are inflated by the majority class. Most people never get stroke in their life regardless of factors such as gender, hypertension etc. Yes, there factor can help us predict, but the data by itself does not seem to have power to distinguish between these features because look at the graph the majority distribution across all the categories has been dominated by people who do not have stroke, so it is hard to tell if these features help or not.
+
+# To handle imbalance in the data we will not use re-sampling techniques, but instead rely on class weights. But first we need to establish base line performance.
+
+# all the features will be used and no features will be engineered at first. I don't have any domain knowledge to do so. 
+
+numerical_cols = ['age', 'avg_glucose_level', 'bmi']
+
+X_train, X_test, y_train, y_test = train_test_split(
+    df.select(categorical_cols + numerical_cols),
+    df.select(target),
+    test_size=0.2,
+    random_state=1984
+)
+
+# build pipeline for transformation
+
+cv = KFold(n_splits=5, shuffle=True, random_state=1984)
+dummy_clf = DummyClassifier(strategy='uniform')
+dummy_scores = cross_val_score(dummy_clf, X_train, y_train, cv=cv, scoring='f2')
 
 
+train_test_split()
 
 
+sns.histplot(df.select(pl.col('age') / pl.max('age')), x='age')
+sns.histplot(df, x='age')
 
 
+def z_scores(series: pl.Series) -> pl.Series:
+    return (series - series.mean()) / series.std()
+
+sns.kdeplot(df.select(z_scores(pl.col('bmi'))), x='bmi')
+sns.kdeplot(df, x='bmi')
 
 
+sns.kdeplot(df.select(pl.col('bmi') - pl.col('bmi').mean()), x='bmi')
+
+sns.kdeplot(df.select(pl.col('bmi') / pl.col('bmi').max()), x='bmi')
+
+sns.kdeplot(
+    df.select( z_scores(pl.col('bmi').log())), x='bmi'
+)
+
+sns.kdeplot(
+    df.select(pl.col('bmi').sqrt()), x='bmi'
+)
+
+# after going down this rabbit hole, I am back
+# the main question was how do I impute the values of bmi, there are only 201 missing. But before that we need to think what caused it. 
+
+# does not form cluster
+sns.scatterplot(df, x='bmi', y='avg_glucose_level', hue='stroke', alpha=0.5)
+sns.scatterplot(df.filter(pl.col('stroke') == '1'), x='bmi', y='avg_glucose_level')
+
+sns.scatterplot(df, x='bmi', y='age', hue='stroke')
 
 
+sns.scatterplot(df, x='age', y='avg_glucose_level', hue='stroke')
+sns.scatterplot(df.filter(pl.col('stroke') == '1'), x='age', y='avg_glucose_level')
 
+# it would have been meaningful if those with heart disease had more glucose level that those who don't have heart disease
+sns.kdeplot(df, x='avg_glucose_level', hue='heart_disease')
+sns.kdeplot(df, x='bmi', hue='heart_disease')
 
+# I am predicting stroke, so the relationship between other variables does not matter; we need good predictors not correlations between other variables. 
 
+# back again on how do I impute the values of bmi
 
+# did age cause missing values ? 
+missing_bmi = df.filter(pl.col('bmi').is_null())
 
+# age seems to be one of the causes of missingness; it could be difficult to collect the data for old people or may be it does not matter for them; this shows that missingness is not random, so I cannot throw away the data. I can, but I will have to justify why I did so.
+sns.histplot(missing_bmi, x='age', binwidth=5)
 
+sns.countplot(missing_bmi, x='gender')
 
+from sklearn.experimental import enable_iterative_imputer
+from sklearn.impute import IterativeImputer
 
+# Convert to numpy array
+bmi_imputation = df[["age","bmi"]].to_numpy()
 
+# Impute using IterativeImputer
+imputer = IterativeImputer(random_state=42)
+imputed_data = imputer.fit_transform(bmi_imputation)
 
+df_imputation = df.with_columns(
+    pl.Series('bmi_imputed', imputed_data[:, 1])
+)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+sns.kdeplot(df_imputation, x='bmi_imputed')
 
 
 
