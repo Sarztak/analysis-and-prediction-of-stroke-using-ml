@@ -164,7 +164,7 @@ def main():
     analyze_bmi_missingness(df)
     
     # # Handle missing values
-    # df_imputed = impute_missing_bmi(df)
+    # df_imputed = impute_missing_bmi(df) KekeKe I smell data leakage !!!
     
     # # Your original model preparation code
     # X_train, X_test, y_train, y_test = train_test_split(
