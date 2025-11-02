@@ -166,7 +166,6 @@ def main():
     # # Handle missing values
     # df_imputed = impute_missing_bmi(df) KekeKe I smell data leakage !!!
     
-    # # Your original model preparation code
     # X_train, X_test, y_train, y_test = train_test_split(
     #     df.select(categorical_cols + numerical_cols),
     #     df.select(target),
