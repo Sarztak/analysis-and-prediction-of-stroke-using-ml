@@ -9,7 +9,7 @@ from transformations import get_feature_groups
 # -------------------------------------------------------------------------
 # 1. ColumnTransformer Builder
 # -------------------------------------------------------------------------
-def build_preprocessor(df: pd.DataFrame):
+def build_preprocessor(df: pd.DataFrame, drop_first=False):
     """
     Creates a preprocessing pipeline with scaling, encoding, and passthroughs.
     Returns a ColumnTransformer ready to be plugged into a model pipeline.
@@ -20,17 +20,17 @@ def build_preprocessor(df: pd.DataFrame):
     # Pipelines for each type
     numeric_transformer = Pipeline(
         steps=[
-            # ("imputer", SimpleImputer(strategy="median")),
+            ("imputer", SimpleImputer(strategy="median")),
             ("scaler", StandardScaler()),
         ]
     )
 
     categorical_transformer = Pipeline(
         steps=[
-            # ("imputer", SimpleImputer(strategy="most_frequent")),
+            ("imputer", SimpleImputer(strategy="most_frequent")),
             (
                 "onehot",
-                OneHotEncoder(handle_unknown="ignore", sparse_output=False, drop=None),
+                OneHotEncoder(handle_unknown="ignore", sparse_output=False, drop= 'first' if drop_first else None),
             ),
         ]
     )
@@ -50,14 +50,14 @@ def build_preprocessor(df: pd.DataFrame):
 # -------------------------------------------------------------------------
 # 2. Pipeline Assembler
 # -------------------------------------------------------------------------
-def make_training_pipeline(model, df: pd.DataFrame):
+def make_training_pipeline(model, df: pd.DataFrame, drop_first=False):
     """
     Combines preprocessing with the given model into a full pipeline.
     model: any scikit-learn estimator (e.g., RandomForestClassifier)
     Returns: sklearn.Pipeline
     """
 
-    preprocessor = build_preprocessor(df)
+    preprocessor = build_preprocessor(df, drop_first=drop_first)
 
     pipeline = Pipeline(
         steps=[
@@ -74,6 +74,7 @@ if __name__ == "__main__":
     from transformations import assemble_feature_set
     from sklearn.model_selection import train_test_split
     from rich.traceback import install 
+    import matplotlib.pyplot as plt 
 
     install()
 
@@ -84,7 +85,10 @@ if __name__ == "__main__":
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y)
 
     rf_model = RandomForestClassifier(n_estimators=100, max_depth=5, random_state=1984)
-    pipeline = make_training_pipeline(rf_model, X_train)
+    pipeline = make_training_pipeline(rf_model, X_train, drop_first=True)
     pipeline.fit(X_train, y_train)
     y_pred = pipeline.predict(X_test)
-    
+    feature_names = pipeline.named_steps['preprocess'].get_feature_names_out()
+    feature_imp = pipeline.named_steps['model'].feature_importances_
+    plt.barh(feature_names, feature_imp)
+    breakpoint()
