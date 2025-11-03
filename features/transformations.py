@@ -12,6 +12,31 @@ from sklearn.impute import IterativeImputer
 
 
 # -------------------------------------------------------------------------
+# 0. Outlier Handling (applied before feature engineering)
+# -------------------------------------------------------------------------
+
+def handle_outliers(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Caps extreme numeric outliers at medically plausible limits
+    and retains binary flags for analysis/modeling.
+    """
+    df = df.copy()
+
+    # --- BMI ---
+    # Flag unrealistic BMI (<10 or >60)
+    df["bmi_outlier_flag"] = (df["bmi"] < 10) | (df["bmi"] > 60)
+    # Clip within safe physiological range
+    df["bmi"] = df["bmi"].clip(lower=10, upper=60)
+
+    # --- Average Glucose Level ---
+    # Flag potential errors (<40 or >300)
+    df["glucose_outlier_flag"] = (df["avg_glucose_level"] < 40) | (df["avg_glucose_level"] > 300)
+    # Clip to clinically reasonable limits
+    df["avg_glucose_level"] = df["avg_glucose_level"].clip(lower=40, upper=300)
+
+    return df
+
+# -------------------------------------------------------------------------
 # 1. Custom BMI Imputer
 # -------------------------------------------------------------------------
 class BMICustomImputer(BaseEstimator, TransformerMixin):
@@ -132,27 +157,56 @@ def create_smoking_features(df: pd.DataFrame) -> pd.DataFrame:
 # -------------------------------------------------------------------------
 # 7. Master Transformation Function
 # -------------------------------------------------------------------------
-def assemble_feature_set(df: pd.DataFrame, impute_bmi: bool = True) -> pd.DataFrame:
+def assemble_feature_set(
+    df: pd.DataFrame,
+    impute_bmi: bool = True,
+    clip_outliers: bool = True,
+    drop_missing: bool = False,
+) -> pd.DataFrame:
     """
-    Runs the complete feature engineering pipeline.
-    Returns a processed DataFrame ready for modeling.
+    Runs the complete feature engineering pipeline with optional stages.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Raw input dataset.
+    impute_bmi : bool, default=True
+        Whether to impute BMI values using BMICustomImputer.
+        Set False to keep BMI missing values as-is (for raw or dropped versions).
+    clip_outliers : bool, default=True
+        Whether to cap extreme BMI and glucose values and add outlier flags.
+    drop_missing : bool, default=False
+        Whether to drop all rows with missing values instead of imputing.
+
+    Returns
+    -------
+    df : pd.DataFrame
+        Processed DataFrame ready for modeling or storage.
     """
 
     df = df.copy()
 
-    # Drop id column
-    if 'id' in df.columns:
-        df = df.drop(columns='id')
-    
-    # Clean categories
+    # Drop ID column if present
+    if "id" in df.columns:
+        df = df.drop(columns="id")
+
+    # Step 1: Handle numeric outliers
+    if clip_outliers:
+        df = handle_outliers(df)
+
+    # Step 2: Drop missing rows (alternative to imputation)
+    if drop_missing:
+        df = df.dropna().reset_index(drop=True)
+
+    # Step 3: Clean categorical inconsistencies
     df = clean_categoricals(df)
 
-    # Handle BMI imputation
-    if impute_bmi:
+    # Step 4: BMI imputation (only if not dropping missing)
+    if impute_bmi and not drop_missing:
         imputer = BMICustomImputer()
         df = imputer.fit_transform(df)
 
-    # Feature creation
+    # Step 5: Feature creation
     df = create_age_features(df)
     df = create_glucose_features(df)
     df = create_bmi_features(df)
@@ -193,7 +247,16 @@ def get_feature_groups(df: pd.DataFrame):
 
 
 if __name__ == "__main__":
-    df = pd.read_csv("../data/stroke_data.csv")
-    df = assemble_feature_set(df)
-    breakpoint()
-    print(df.head())
+    raw_df = pd.read_csv("./data/stroke_data.csv")
+
+    # v0_raw
+    v0_raw = assemble_feature_set(raw_df, impute_bmi=False, clip_outliers=False, drop_missing=False)
+
+    # v1_clipped
+    v1_clipped = assemble_feature_set(raw_df, impute_bmi=False, clip_outliers=True, drop_missing=False)
+
+    # v2_dropped
+    v2_dropped = assemble_feature_set(raw_df, impute_bmi=False, clip_outliers=True, drop_missing=True)
+
+    # v3_imputed_full
+    v3_imputed_full = assemble_feature_set(raw_df, impute_bmi=True, clip_outliers=True, drop_missing=False)
