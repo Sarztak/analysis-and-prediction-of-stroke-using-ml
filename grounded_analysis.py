@@ -144,7 +144,7 @@ columns_to_use = [
 
     # NOT USING FOR NOW
     # 'hypertension', 'heart_disease', 'ever_married',
-    # 'work_type', 'Residence_type',
+    # 'work_type', 'residence_type',
 
     'avg_glucose_level',
     'bmi',

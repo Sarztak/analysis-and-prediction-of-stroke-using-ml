@@ -19,7 +19,7 @@ def load_data(filepath: str) -> pl.DataFrame:
         'heart_disease': pl.Int64,
         'ever_married': pl.Categorical,
         'work_type': pl.Categorical,
-        'Residence_type': pl.Categorical,
+        'residence_type': pl.Categorical,
         'avg_glucose_level': pl.Float64,
         'bmi': pl.Float64,
         'smoking_status': pl.Categorical,
@@ -34,7 +34,7 @@ def load_data(filepath: str) -> pl.DataFrame:
     )
     
     # the age of children is quoted as float, not int, which creates problems
-    return df.rename({'Residence_type': 'residence_type'})
+    return df.rename({'residence_type': 'residence_type'})
 
 
 def explore_categorical_features(df: pl.DataFrame, categorical_cols: list) -> None:

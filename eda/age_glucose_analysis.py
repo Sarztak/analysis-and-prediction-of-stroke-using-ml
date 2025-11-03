@@ -649,7 +649,7 @@ if __name__ == "__main__":
     # plot_bmi_missing_trend_quantile(df)
     # plot_bmi_missing_by_target(df)
     binary_cols = ['hypertension', 'heart_disease', 
-                   'ever_married', 'Residence_type']
+                   'ever_married', 'residence_type']
     # cols = ['gender', 'work_type', 'smoking_status']
     # for col in cols:
     #     plot_categorical_vs_target(df, col)
