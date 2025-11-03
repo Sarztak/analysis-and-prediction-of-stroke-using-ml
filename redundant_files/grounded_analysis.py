@@ -1,4 +1,4 @@
-from smoking_stroke_analysis import analyze_smoking_stroke_risk
+from redundant_files.smoking_stroke_analysis import analyze_smoking_stroke_risk
 import pandas as pd
 import seaborn as sns
 sns.set_theme(style="white")
@@ -56,10 +56,10 @@ sns.histplot(data=stroke_data, x='bmi', hue='stroke')
 
 stroke_data.isna().sum()
 
-from bmi_viz import plot_bmi
+from redundant_files.bmi_viz import plot_bmi
 plot_bmi(stroke_data)
 
-from bmi_missingness_analysis import comprehensive_missingness_analysis
+from redundant_files.bmi_missingness_analysis import comprehensive_missingness_analysis
 comprehensive_missingness_analysis(stroke_data)
 
 import pandas as pd
