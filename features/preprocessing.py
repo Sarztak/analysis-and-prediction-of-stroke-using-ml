@@ -33,7 +33,11 @@ def get_feature_groups(df: pd.DataFrame):
         "is_smoking_unknown",
         "is_smokes",
     ]
-    return numeric_features, categorical_features, binary_features
+    numeric = [c for c in numeric_features if c in df.columns]
+    categorical = [c for c in categorical_features if c in df.columns]
+    binary = [c for c in binary_features if c in df.columns]
+
+    return numeric, categorical, binary
 
 
 # -------------------------------------------------------------------------
@@ -126,3 +130,4 @@ if __name__ == "__main__":
     feature_names = pipeline.named_steps['preprocess'].get_feature_names_out()
     feature_imp = pipeline.named_steps['model'].feature_importances_
     plt.barh(feature_names, feature_imp)
+
