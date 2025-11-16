@@ -115,8 +115,13 @@ if __name__ == "__main__":
 
     install()
 
+    # load data
     df_raw = pd.read_csv("./data/stroke_data.csv")
+    
+    # clean data
     df_cleaned = full_cleaning(df_raw)
+    
+    # create features
     df_featurized = apply_all_feature_creation(df_cleaned)
 
     X = df_featurized.drop(columns=["stroke"])

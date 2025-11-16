@@ -4,15 +4,15 @@ data cleaning and feature creation stages.
 """
 
 import pandas as pd
-from data_cleaning import full_cleaning
-from feature_creation import apply_all_feature_creation
+from .data_cleaning import full_cleaning
+from .feature_creation import apply_all_feature_creation
 
 
 def assemble_feature_set(
     df: pd.DataFrame,
     apply_cleaning: bool = True,
-    impute_bmi: bool = True,
-    clip_outliers: bool = True,
+    impute_bmi: bool = False,
+    clip_outliers: bool = False,
     drop_missing: bool = False,
 ) -> pd.DataFrame:
     """
@@ -53,7 +53,34 @@ if __name__ == "__main__":
     raw_df = pd.read_csv("./data/stroke_data.csv")
 
     # Example versions
+    """
+    |Version        | Transformation Style                  | Key Difference   |
+    | ------------- | ------------------------------------- | ---------------- |
+    | v1            | Minimal preprocessing                 | Baseline         |
+    | v2            | Full feature engineering + drop NAs   | Sensitivity test |
+    | v3            | Full feature engineering + imputation | Main version     |
+    | v4 (optional) | Drop NAs only, no imputation          | Extra flex       |
+    """
     v0_raw = assemble_feature_set(raw_df, apply_cleaning=False)
-    v1_clipped = assemble_feature_set(raw_df, impute_bmi=False, clip_outliers=True)
-    v2_dropped = assemble_feature_set(raw_df, impute_bmi=False, clip_outliers=True, drop_missing=True)
-    v3_imputed = assemble_feature_set(raw_df, impute_bmi=True, clip_outliers=True)
+    
+    # outliers are always clipped
+
+    # NAs are not dropped - this can only be used for tree based models that handle NAs
+    v1_clipped = assemble_feature_set(
+        raw_df, impute_bmi=False, clip_outliers=True
+    )
+
+    # can be used for Logistic Regression Baseline
+    v2_dropped = assemble_feature_set(
+        raw_df, impute_bmi=False, clip_outliers=True, drop_missing=True
+    )
+
+    # drop nothing, apply imputation and clipping
+    v3_imputed = assemble_feature_set(
+        raw_df, impute_bmi=True, clip_outliers=True
+    )
+    
+    #
+    v4_drop_na_no_imp = assemble_feature_set(
+        raw_df, impute_bmi=False, clip_outliers=True, drop_missing=True
+    )

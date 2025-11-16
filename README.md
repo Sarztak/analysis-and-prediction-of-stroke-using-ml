@@ -34,3 +34,11 @@ Now I am making changes to the feature branch readme for rebasing. this should t
 | **Feature Creation**             | Builds domain features              | `feature_creation.py` |
 | **Transformation Orchestration** | Combines both for configurable runs | `transformation.py`   |
 | **Model Preprocessing**          | Scaling, encoding, modeling         | `preprocessing.py`    |
+
+
+| Version       | Transformation Style                  | Key Difference   |
+| ------------- | ------------------------------------- | ---------------- |
+| v1            | Minimal preprocessing                 | Baseline         |
+| v2            | Full feature engineering + imputation | Main version     |
+| v3            | Full feature engineering + drop NAs   | Sensitivity test |
+| v4 (optional) | Drop NAs only, no imputation          | Extra flex       |

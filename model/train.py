@@ -2,9 +2,9 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
 
-from data_cleaning import full_cleaning
-from feature_creation import apply_all_feature_creation
-from preprocessing import make_training_pipeline
+from features.data_cleaning import full_cleaning
+from features.feature_creation import apply_all_feature_creation
+from features.preprocessing import make_training_pipeline
 from model_factory import get_model
 import argparse
 
