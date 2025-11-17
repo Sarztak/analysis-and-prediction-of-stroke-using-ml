@@ -47,24 +47,31 @@ def train_linear_model(raw_df):
     y = "stroke"
     x = [col for col in h2o_train.columns if col not in [y, "weights"]]
 
-    # 5. AutoML limited to desired algorithms
+    # 5. AutoML
     aml = H2OAutoML(
         max_models=50,
         seed=1984,
-        stopping_metric="AUCPR",
-        include_algos=["GBM", "DRF"], # XGBoost not available on Windows 😢
-        exclude_algos=["StackedEnsemble"],
+        stopping_metric="AUCPR",  # aligns with PR-based objective
         sort_metric="AUCPR",
-        verbosity="info",
-        max_runtime_secs=120,
+        balance_classes=False, # stratification used 
+        max_runtime_secs=900,
     )
 
     # Train with weights (reweighting, no resampling)
     aml.train(x=x, y=y, training_frame=h2o_train, weights_column="weights")
 
     # Evaluate on test set
-    perf = aml.leader.model_performance(h2o_test)
-    print(perf.aucpr())
+    aml.leaderboard.head()
+    leader = aml.leader
+    test_perf = leader.model_performance(h2o_test)
+    print("Test AUCPR:", test_perf.aucpr())
+
+    target_precision = 0.90
+    threshold = test_perf.find_threshold_by_max_metric("precision")
+    max_precision = test_perf.metric("precision", [threshold])[0][1]
+    print(f"Threshold @{max_precision}% precision:{threshold}")
+    print(f"Recall at this threshold:{test_perf.recall(threshold)[0][1]:.3f}",)
+
 
     return aml, h2o_train, h2o_test
 
