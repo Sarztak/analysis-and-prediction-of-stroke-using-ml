@@ -17,7 +17,7 @@ from h2o.automl import H2OAutoML
 from sklearn.model_selection import train_test_split
 import pandas as pd
 
-def train_linear_model(raw_df):
+def train_auto_model(raw_df):
     # 1. Feature assembly
     df_featurized = assemble_feature_set(raw_df, drop_missing=True)
 
