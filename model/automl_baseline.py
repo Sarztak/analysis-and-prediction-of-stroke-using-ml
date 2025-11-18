@@ -17,7 +17,7 @@ from h2o.automl import H2OAutoML
 from sklearn.model_selection import train_test_split
 import pandas as pd
 
-def train_auto_model(raw_df):
+def train_automl_model(raw_df):
     # 1. Feature assembly
     df_featurized = assemble_feature_set(raw_df, drop_missing=True)
 
@@ -77,7 +77,7 @@ def train_auto_model(raw_df):
 
 if __name__ == "__main__":
     raw_df = pd.read_csv("./data/stroke_data.csv")
-    aml, X_train, X_test = train_linear_model(raw_df)
+    aml, X_train, X_test = train_automl_model(raw_df)
     lb_all = aml.leaderboard # leaderboard contains model results
     lb_all = lb_all.as_data_frame(use_pandas=True) # convert to pandas df for easy wrangling
     lb_all.head() # all metrics are computed on X_val internally
