@@ -1,0 +1,6 @@
+{
+  "n_estimators": 4,
+  "max_features": 0.17932168602113385,
+  "max_leaves": 13,
+  "criterion": "gini"
+}
