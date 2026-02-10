@@ -1,0 +1,25 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+name: stroke_data_drift
+display_name: Stroke Data Drift Detection
+version: 2
+type: command
+
+inputs:
+  baseline_data:
+    type: uri_file
+  modified_data:
+    type: uri_file
+
+outputs:
+  drift_report:
+    type: uri_file
+    mode: upload
+
+code: .
+environment: azureml:AzureML-sklearn-1.0-ubuntu20.04-py38-cpu@latest
+
+command: >
+  python stroke_drift.py
+  --baseline_data ${{inputs.baseline_data}}
+  --modified_data ${{inputs.modified_data}}
+  --drift_report ${{outputs.drift_report}}
