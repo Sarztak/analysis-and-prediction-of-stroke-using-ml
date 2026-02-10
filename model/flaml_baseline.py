@@ -3,14 +3,15 @@ import argparse
 import sys
 import os
 sys.path.append(os.getcwd())
-
+import numpy as np
 from helper import compute_class_weights, compute_train_test_val_split
 from features.transformation import assemble_feature_set
 import pandas as pd 
 import mlflow
 from flaml import AutoML
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import roc_auc_score, accuracy_score, precision_score, recall_score, average_precision_score
+from sklearn.metrics import roc_auc_score, accuracy_score, precision_score, recall_score, average_precision_score, PrecisionRecallDisplay, precision_recall_curve
+import matplotlib.pyplot as plt
 import dotenv
 
 
@@ -20,7 +21,7 @@ RANDOM_STATE = int(env_dict.get('RANDOM_STATE'))
 TIME_BUDGET = int(env_dict.get('TIME_BUDGET'))
 estimators = env_dict.get('estimators')
 
-def train_automl_model(raw_df, run_name):
+def train_automl_model(raw_df, run_name, recall_op=0.8):
     # 1. Feature assembly
     df_featurized = assemble_feature_set(raw_df, drop_missing=True)
 
@@ -46,7 +47,7 @@ def train_automl_model(raw_df, run_name):
             y_train=y_train,
             X_val=X_val,
             y_val=y_val,
-            # sample_weight=sample_weights,
+            sample_weight=sample_weights,
             metric='ap',
             task='classification',
             estimator_list=estimator_list,
@@ -62,6 +63,8 @@ def train_automl_model(raw_df, run_name):
             seed=RANDOM_STATE,
             best_estimator=automl.best_estimator,
         )
+
+        mlflow.log_params(parent_run_params)
 
         # log best config
         mlflow.log_dict(automl.best_config, "best_config.json")
@@ -81,7 +84,31 @@ def train_automl_model(raw_df, run_name):
 
         mlflow.log_metrics(val_metrics)        
         mlflow.log_metrics(test_metrics)        
-   
+
+        # plot the precision recall curve and the thresholds
+        plt.figure(figsize=(10, 6))
+        PrecisionRecallDisplay.from_predictions(y_val, y_pred_proba_val)
+        plt.title("Precision Recall Curve") 
+        plt.savefig('./reports/pr_curve.png')
+        plt.close()
+        mlflow.log_artifact('./reports/pr_curve.png')
+
+        # find the threshold for a given recall value
+        precision, recall, thresholds = precision_recall_curve(y_val, y_pred_proba_val)
+
+        op_idx = np.argmin(np.abs(recall - recall_op)) # find the index of the closest value to the recall operating point
+        threshold_at_op = thresholds[op_idx]
+        precision_at_op = precision[op_idx]
+        recall_at_op = recall[op_idx]
+
+        # log these values as a dictionary
+        op_at_0p8 = dict(
+            precision=precision_at_op,
+            recall=recall_at_op,
+            threshold=threshold_at_op
+        )
+
+        mlflow.log_dict(op_at_0p8, "operating_point_at_0p8.json")
 
 if __name__ == "__main__":
     # set tracking uri
