@@ -1,0 +1,33 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+
+name: stroke_data_prep
+display_name: Stroke Data Preprocessing
+version: 8
+type: command
+
+inputs:
+  raw_data:
+    type: uri_file
+  version:
+    type: string
+    default: v2_dropped
+
+outputs:
+  train_output:
+    type: uri_file
+  test_output:
+    type: uri_file
+  modified_output:
+    type: uri_file
+
+code: ../
+
+environment: azureml:AzureML-sklearn-1.0-ubuntu20.04-py38-cpu@latest
+
+command: >-
+  python pipelines/stroke_preprocessing_component.py
+  --raw_data ${{inputs.raw_data}}
+  --version ${{inputs.version}}
+  --train_output ${{outputs.train_output}}
+  --test_output ${{outputs.test_output}}
+  --modified_output ${{outputs.modified_output}}
